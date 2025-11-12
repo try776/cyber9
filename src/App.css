@@ -1,42 +1,116 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+/* Globale Styles */
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  color: #333;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+/* Das Haupt-Layout des Builders */
+.App-Builder {
+  display: flex;
+  height: 100vh;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+/* === TOOLBOX (links) === */
+.toolbox {
+  width: 200px;
+  background-color: #f4f4f4;
+  border-right: 1px solid #ddd;
+  padding: 15px;
+}
+.toolbox h3 {
+  margin-top: 0;
+}
+.toolbox button {
+  display: block;
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.toolbox button:hover {
+  background-color: #0056b3;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+/* === HAUPTBEREICH (rechts) === */
+.main-area {
+  flex-grow: 1; /* Nimmt den restlichen Platz ein */
+  display: flex;
+  flex-direction: column;
 }
 
-.card {
-  padding: 2em;
+.toolbar {
+  background-color: #fff;
+  border-bottom: 1px solid #ddd;
+  padding: 10px;
+  text-align: right;
+}
+.toolbar button {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
 }
 
-.read-the-docs {
-  color: #888;
+/* === DIE LEINWAND (Canvas) === */
+.canvas {
+  flex-grow: 1;
+  background-color: #fdfdfd;
+  background-image: 
+    linear-gradient(rgba(0, 0, 0, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px; /* Ein Pünktchen-Raster */
+  
+  /* SEHR WICHTIG: 
+     Dies ist der "Bounding Box" für unsere Draggable-Elemente, 
+     die 'position: absolute' verwenden. */
+  position: relative; 
+  overflow: hidden; /* Verhindert, dass Elemente "rausbluten" */
+}
+
+.canvas-placeholder {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #aaa;
+  font-size: 1.2rem;
+}
+
+/* === DIE VERSCHIEBBAREN ELEMENTE === */
+.draggable-component {
+  /* react-draggable setzt 'position: absolute' und 'transform' */
+  padding: 5px;
+  border: 1px dashed transparent;
+  display: flex; /* Für Handle und Inhalt nebeneinander */
+  align-items: center;
+}
+/* Zeigt einen Rahmen, wenn man über das Element fährt */
+.draggable-component:hover {
+  border-color: #007bff;
+}
+
+.drag-handle {
+  cursor: move; /* Zeigt das "Verschieben"-Icon */
+  padding: 5px;
+  color: #007bff;
+  user-select: none; /* Verhindert Text-Markierung beim Ziehen */
+}
+
+/* Die Elemente selbst */
+.draggable-component span {
+  padding: 10px;
+  background-color: rgba(255, 255, 255, 0.8);
+}
+.draggable-component button {
+  padding: 10px 15px;
+}
+.draggable-component img {
+  border: 1px solid #ccc;
 }
