@@ -1,10 +1,10 @@
-import React, { useState, useRef, createRef } from 'react';
+import React, { useState, useRef, createRef, useEffect } from 'react'; // 1. useEffect importieren
 import Draggable from 'react-draggable';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import './App.css'; 
 
-// 1. Die Toolbox-Komponente (unverändert)
+// 1. Toolbox-Komponente (unverändert)
 const Toolbox = ({ addComponent }) => {
   return (
     <div className="toolbox">
@@ -16,7 +16,7 @@ const Toolbox = ({ addComponent }) => {
   );
 };
 
-// 2. Die Properties-Panel Komponente (unverändert)
+// 2. Properties-Panel Komponente (unverändert)
 const PropertiesPanel = ({ selectedComponent, updateComponent }) => {
   if (!selectedComponent) {
     return (
@@ -45,68 +45,55 @@ const PropertiesPanel = ({ selectedComponent, updateComponent }) => {
 };
 
 
-// 3. Die PDF Export-Funktion (JETZT KORRIGIERT)
-const exportToPDF = (canvasRef, components) => {
-  console.log("Exportiere PDF...");
+// 3. PDF Export-Funktion (JETZT VIEL EINFACHER)
+// Diese Funktion wird jetzt von einem 'useEffect'-Hook aufgerufen
+const generatePDF = (canvasRef, setExporting) => {
+  console.log("PDF-Generierung startet... (nach Re-Render)");
   const input = canvasRef.current;
-  const activeHandles = input.querySelectorAll('.dragging-active');
 
-  // --- VORBEREITUNG FÜR HTML2CANVAS ---
-  // 1. Verstecke die Drag-Handles
-  activeHandles.forEach(handle => handle.style.display = 'none');
-
-  // 2. Ersetze 'transform' durch 'top'/'left'
-  components.forEach(comp => {
-    const el = document.getElementById(comp.id);
-    if (el) {
-      el.style.transform = 'none';
-      el.style.top = `${comp.y}px`;
-      el.style.left = `${comp.x}px`;
-    }
-  });
-
-  // 3. FIX: Warte mit 'setTimeout(0)', bis der Browser die DOM-Änderungen (top/left) gerendert hat
-  setTimeout(() => {
-    html2canvas(input, { 
-      useCORS: true, 
-      scale: 2,
-      // Füge diese hinzu, um die Chancen weiter zu verbessern
-      allowTaint: true 
-    })
-      .then((canvas) => {
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF({
-          orientation: 'p',
-          unit: 'px',
-          format: [canvas.width, canvas.height]
-        });
-        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-        pdf.save("mein-ui-design.pdf");
-
-        // --- AUFRÄUMEN NACH DEM EXPORT ---
-        // 4. Mache die Handles wieder sichtbar
-        activeHandles.forEach(handle => handle.style.display = 'block');
-
-        // 5. Stelle die 'transform'-Positionierung wieder her
-        components.forEach(comp => {
-          const el = document.getElementById(comp.id);
-          if (el) {
-            el.style.transform = `translate(${comp.x}px, ${comp.y}px)`;
-            el.style.top = '0px';
-            el.style.left = '0px';
-          }
-        });
+  html2canvas(input, { 
+    useCORS: true, 
+    scale: 2,
+    allowTaint: true // Hilft bei manchen Browser-Sicherheitsregeln
+  })
+    .then((canvas) => {
+      // Prüfen, ob der Canvas leer ist (reine Vorsichtsmassnahme)
+      if (canvas.width === 0 || canvas.height === 0) {
+        console.error("html2canvas hat einen leeren Canvas erstellt.");
+        setExporting(false); // Export-Modus beenden
+        return;
+      }
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'p',
+        unit: 'px',
+        format: [canvas.width, canvas.height]
       });
-  }, 0); // 0ms Timeout reicht aus, um es an das Ende der Event-Queue zu schieben
+      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+      pdf.save("mein-ui-design.pdf");
+      
+      // WICHTIG: Den Export-Modus beenden
+      setExporting(false); 
+    })
+    .catch(err => {
+      console.error("Fehler bei html2canvas:", err);
+      setExporting(false); // Auch bei Fehler beenden
+    });
 };
 
 
-// 4. Die Haupt-App-Komponente (unverändert)
+// 4. Die Haupt-App-Komponente
 function App() {
   const [components, setComponents] = useState([]);
   const [selectedComponentId, setSelectedComponentId] = useState(null);
+  
+  // NEUER STATE: Steuert den Export-Modus
+  const [isExporting, setIsExporting] = useState(false); 
+  
   const canvasRef = useRef(null);
 
+  // addComponent (unverändert)
   const addComponent = (type) => {
     const newComponent = {
       id: `comp-${Date.now()}`,
@@ -119,6 +106,7 @@ function App() {
     setComponents(prevComponents => [...prevComponents, newComponent]);
   };
 
+  // onStopDrag (unverändert)
   const onStopDrag = (e, data, id) => {
     setComponents(prevComponents => 
       prevComponents.map(comp => 
@@ -127,6 +115,7 @@ function App() {
     );
   };
 
+  // renderComponent (unverändert)
   const renderComponent = (comp) => {
     switch (comp.type) {
       case 'text':
@@ -140,6 +129,7 @@ function App() {
     }
   };
 
+  // updateComponent (unverändert)
   const updateComponent = (id, property, value) => {
     setComponents(prevComponents =>
       prevComponents.map(comp => 
@@ -150,6 +140,16 @@ function App() {
   
   const selectedComponent = components.find(comp => comp.id === selectedComponentId);
 
+  // NEUER HOOK: Löst den PDF-Export aus, *nachdem* der State
+  // (und damit das DOM) aktualisiert wurde.
+  useEffect(() => {
+    if (isExporting) {
+      // Wir rufen die PDF-Funktion auf und übergeben ihr die Setter-Funktion
+      generatePDF(canvasRef, setIsExporting);
+    }
+  }, [isExporting]); // Lauscht nur auf Änderungen an 'isExporting'
+
+  // Render-Funktion
   return (
     <div className="App-Builder">
       
@@ -157,7 +157,10 @@ function App() {
       
       <div className="main-area">
         <div className="toolbar">
-          <button onClick={() => exportToPDF(canvasRef, components)}>Als PDF exportieren</button>
+          {/* GEÄNDERT: Der Button setzt jetzt nur noch den State */}
+          <button onClick={() => setIsExporting(true)} disabled={isExporting}>
+            {isExporting ? 'Exportiere...' : 'Als PDF exportieren'}
+          </button>
         </div>
 
         <div 
@@ -170,7 +173,10 @@ function App() {
           }}
         >
           
-          {components.map((comp) => (
+          {/* === KONDITIONALES RENDERING === */}
+          
+          {/* 1. Normaler Modus (mit Draggable) */}
+          {!isExporting && components.map((comp) => (
             <Draggable
               key={comp.id}
               nodeRef={comp.ref} 
@@ -185,12 +191,34 @@ function App() {
                 ref={comp.ref}
                 onClick={() => setSelectedComponentId(comp.id)}
               >
+                {/* WICHTIG: Das 'dragging-active' Tag ist für das alte PDF-Skript 
+                    (das Handles versteckt), aber wir behalten es für den Klick-Handler.
+                    Wir müssen sicherstellen, dass das Handle im Export-Modus nicht gerendert wird. */}
                 <div className="drag-handle">::</div>
                 {renderComponent(comp)}
               </div>
             </Draggable>
           ))}
           
+          {/* 2. Export-Modus (reines HTML, kein Draggable, kein Handle) */}
+          {isExporting && components.map((comp) => (
+            <div
+              key={comp.id}
+              id={comp.id}
+              className="draggable-component" // 'dragging-active' & 'selected' entfernt
+              // WICHTIG: Positioniere es mit 'top'/'left', was html2canvas versteht
+              style={{
+                position: 'absolute',
+                top: `${comp.y}px`,
+                left: `${comp.x}px`
+              }}
+            >
+              {/* Kein Drag-Handle rendern! */}
+              {renderComponent(comp)}
+            </div>
+          ))}
+
+          {/* 3. Platzhalter (unverändert) */}
           {components.length === 0 && (
             <div className="canvas-placeholder">
               Klicke auf Elemente in der Toolbox, um sie hinzuzufügen.
