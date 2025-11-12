@@ -15,6 +15,7 @@
 
   /* Grössen & Schrift */
   --toolbox-width: 200px;
+  --properties-panel-width: 250px;
   --border-radius-default: 4px;
   --font-family-default: Arial, sans-serif;
 }
@@ -30,6 +31,7 @@ body {
   margin: 0;
   font-family: var(--font-family-default);
   color: var(--color-text);
+  overflow: hidden; /* Verhindert Scrollbalken auf App-Ebene */
 }
 
 /* === HAUPT-LAYOUT === */
@@ -44,18 +46,19 @@ body {
   background-color: var(--color-background-light);
   border-right: 1px solid var(--color-border);
   padding: 15px;
-  flex-shrink: 0; /* Verhindert, dass die Toolbox schrumpft */
+  flex-shrink: 0;
 }
 
 .toolbox h3 {
   margin-top: 0;
 }
 
-/* === HAUPTBEREICH (rechts) === */
+/* === HAUPTBEREICH (mitte) === */
 .main-area {
-  flex-grow: 1; /* Nimmt den restlichen Platz ein */
+  flex-grow: 1; 
   display: flex;
   flex-direction: column;
+  min-width: 0; 
 }
 
 .toolbar {
@@ -63,7 +66,7 @@ body {
   border-bottom: 1px solid var(--color-border);
   padding: 10px;
   text-align: right;
-  flex-shrink: 0; /* Verhindert Schrumpfen */
+  flex-shrink: 0;
 }
 
 /* === GEMEINSAME BUTTON-STYLES === */
@@ -107,7 +110,7 @@ body {
     linear-gradient(90deg, var(--color-grid) 1px, transparent 1px);
   background-size: 20px 20px;
   position: relative; 
-  overflow: hidden;
+  overflow: auto; 
 }
 
 .canvas-placeholder {
@@ -120,49 +123,81 @@ body {
   user-select: none;
 }
 
-/* === VERSCHIEBBARE ELEMENTE === */
+/* === VERSCHIEBBARE ELEMENTE (Wrapper & Inhalt) === */
+
+/* NEU: Das <Resizable>-Element selbst. Es muss 100% seines Wrappers füllen. */
+.react-resizable {
+  width: 100%;
+  height: 100%;
+  position: relative; /* WICHTIG */
+}
+
+/* Dies ist unser Kind-Element, das 'draggable-component' */
 .draggable-component {
-  /* * 'position: absolute' ist entscheidend für den PDF-Export-Hack 
-   * (um 'top'/'left' setzen zu können) 
-   */
-  position: absolute;
+  /* Füllt den 'react-resizable'-Wrapper aus */
+  width: 100%;
+  height: 100%;
   
-  /* * 'display: inline-flex' ist entscheidend für das freie Verschieben
-   * (sodass die Box nicht 100% breit ist) 
-   */
-  display: inline-flex;
-  
-  padding: 5px;
-  border: 1px dashed transparent;
+  position: relative;
+  display: flex;
   align-items: center;
-  /* Verhindert, dass das 'transform' beim Hover wackelt */
-  transform: translate(0, 0); 
+  
+  border: 2px dashed transparent;
+  padding: 5px;
+  z-index: 1;
+  box-sizing: border-box; 
 }
 
 .draggable-component:hover {
   border-color: var(--color-primary);
+  z-index: 2;
+}
+
+.draggable-component.selected {
+  border-color: var(--color-primary);
+  border-style: solid;
+  z-index: 3;
 }
 
 .drag-handle {
   cursor: move;
   padding: 5px;
   color: var(--color-primary);
-  user-select: none; /* Verhindert Text-Markierung beim Ziehen */
+  user-select: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
+}
+
+.react-resizable-handle-se {
+  z-index: 11 !important; 
 }
 
 /* === INHALT DER ELEMENTE === */
-.draggable-component span {
+.content-fill {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  padding-left: 25px; 
+}
+
+.draggable-component span.content-fill {
   padding: 10px;
+  padding-left: 25px;
   background-color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
 }
 
-.draggable-component button {
+.draggable-component button.content-fill {
   padding: 10px 15px;
+  padding-left: 25px;
+  width: 100%;
+  height: 100%;
 }
 
-.placeholder-image {
-  width: 150px;
-  height: 100px;
+.placeholder-image.content-fill {
   background-color: #eee;
   border: 1px solid #ccc;
   display: flex;
@@ -171,98 +206,15 @@ body {
   color: var(--color-text-light);
   font-size: 0.9rem;
 }
-/* === GLOBALE STYLES & VARIABLEN === */
-:root {
-  /* ... (deine variablen bleiben gleich) ... */
-  --properties-panel-width: 250px; /* NEUE Variable */
-  --color-selected: #007bff; /* Farbe für Auswahl-Rahmen */
-}
 
-/* ... (body und *, *::before, *::after bleiben gleich) ... */
-
-/* === HAUPT-LAYOUT === */
-.App-Builder {
-  display: flex;
-  height: 100vh;
-}
-
-/* === TOOLBOX (links) === */
-.toolbox {
-  width: var(--toolbox-width);
-  background-color: var(--color-background-light);
-  border-right: 1px solid var(--color-border);
-  padding: 15px;
-  flex-shrink: 0;
-}
-
-/* ... (toolbox h3 und button styles bleiben gleich) ... */
-
-/* === HAUPTBEREICH (mitte) === */
-.main-area {
-  flex-grow: 1; 
-  display: flex;
-  flex-direction: column;
-  /* Wichtig für die Grösse der Canvas */
-  min-width: 0; 
-}
-
-/* ... (toolbar und button styles bleiben gleich) ... */
-
-/* === DIE LEINWAND (Canvas) === */
-.canvas {
-  flex-grow: 1;
-  background-color: var(--color-background-canvas);
-  background-image: 
-    linear-gradient(var(--color-grid) 1px, transparent 1px),
-    linear-gradient(90deg, var(--color-grid) 1px, transparent 1px);
-  background-size: 20px 20px;
-  position: relative; 
-  overflow: hidden;
-}
-
-/* ... (canvas-placeholder bleibt gleich) ... */
-
-
-/* === VERSCHIEBBARE ELEMENTE === */
-.draggable-component {
-  position: absolute;
-  display: inline-flex;
-  padding: 5px;
-  border: 2px dashed transparent; /* Dicke geändert für besseres Feedback */
-  align-items: center;
-  /* Klickbar machen, auch wenn über anderem Element */
-  z-index: 1; 
-}
-
-.draggable-component:hover {
-  border-color: var(--color-selected);
-  z-index: 2; /* Beim Hovern nach vorne bringen */
-}
-
-/* NEU: Stil für das ausgewählte Element */
-.draggable-component.selected {
-  border-color: var(--color-selected);
-  border-style: solid; /* Durchgezogene Linie statt gestrichelt */
-  z-index: 3; /* Ausgewählt ist immer ganz oben */
-}
-
-.drag-handle {
-  cursor: move;
-  padding: 5px;
-  color: var(--color-primary);
-  user-select: none;
-}
-
-/* ... (inhalt der elemente und placeholder-image bleiben gleich) ... */
-
-
-/* === NEU: PROPERTIES PANEL (rechts) === */
+/* === PROPERTIES PANEL (rechts) === */
 .properties-panel {
   width: var(--properties-panel-width);
   background-color: var(--color-background-light);
   border-left: 1px solid var(--color-border);
   padding: 15px;
   flex-shrink: 0;
+  overflow-y: auto;
 }
 
 .properties-panel h3 {
@@ -291,7 +243,7 @@ body {
   padding: 8px;
   border: 1px solid var(--color-border);
   border-radius: var(--border-radius-default);
-  box-sizing: border-box; /* Stellt sicher, dass Padding die Breite nicht ändert */
+  box-sizing: border-box;
 }
 
 .property-item input:disabled {

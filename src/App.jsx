@@ -1,10 +1,15 @@
-import React, { useState, useRef, createRef, useEffect } from 'react'; // 1. useEffect importieren
+import React, { useState, useRef, createRef, useEffect } from 'react';
 import Draggable from 'react-draggable';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+
+// Resizable-Importe
+import { Resizable } from 'react-resizable';
+import 'react-resizable/css/styles.css'; 
+
 import './App.css'; 
 
-// 1. Toolbox-Komponente (unverändert)
+// 1. Toolbox (unverändert)
 const Toolbox = ({ addComponent }) => {
   return (
     <div className="toolbox">
@@ -16,7 +21,7 @@ const Toolbox = ({ addComponent }) => {
   );
 };
 
-// 2. Properties-Panel Komponente (unverändert)
+// 2. Properties-Panel (unverändert)
 const PropertiesPanel = ({ selectedComponent, updateComponent }) => {
   if (!selectedComponent) {
     return (
@@ -25,9 +30,17 @@ const PropertiesPanel = ({ selectedComponent, updateComponent }) => {
       </div>
     );
   }
-  const handleChange = (e) => {
+  
+  const handleContentChange = (e) => {
     updateComponent(selectedComponent.id, 'content', e.target.value);
   };
+  const handleWidthChange = (e) => {
+    updateComponent(selectedComponent.id, 'width', parseInt(e.target.value) || 0);
+  };
+  const handleHeightChange = (e) => {
+    updateComponent(selectedComponent.id, 'height', parseInt(e.target.value) || 0);
+  };
+
   return (
     <div className="properties-panel">
       <h3>Eigenschaften</h3>
@@ -36,8 +49,24 @@ const PropertiesPanel = ({ selectedComponent, updateComponent }) => {
         <input 
           type="text" 
           value={selectedComponent.content} 
-          onChange={handleChange}
+          onChange={handleContentChange}
           disabled={selectedComponent.type === 'image'} 
+        />
+      </div>
+      <div className="property-item">
+        <label>Breite (px)</label>
+        <input 
+          type="number" 
+          value={selectedComponent.width} 
+          onChange={handleWidthChange}
+        />
+      </div>
+      <div className="property-item">
+        <label>Höhe (px)</label>
+        <input 
+          type="number" 
+          value={selectedComponent.height} 
+          onChange={handleHeightChange}
         />
       </div>
     </div>
@@ -45,55 +74,41 @@ const PropertiesPanel = ({ selectedComponent, updateComponent }) => {
 };
 
 
-// 3. PDF Export-Funktion (JETZT VIEL EINFACHER)
-// Diese Funktion wird jetzt von einem 'useEffect'-Hook aufgerufen
+// 3. PDF Export-Funktion (Die funktionierende Version)
 const generatePDF = (canvasRef, setExporting) => {
-  console.log("PDF-Generierung startet... (nach Re-Render)");
+  console.log("PDF-Generierung startet...");
   const input = canvasRef.current;
-
-  html2canvas(input, { 
-    useCORS: true, 
-    scale: 2,
-    allowTaint: true // Hilft bei manchen Browser-Sicherheitsregeln
-  })
-    .then((canvas) => {
-      // Prüfen, ob der Canvas leer ist (reine Vorsichtsmassnahme)
-      if (canvas.width === 0 || canvas.height === 0) {
-        console.error("html2canvas hat einen leeren Canvas erstellt.");
-        setExporting(false); // Export-Modus beenden
-        return;
-      }
-      
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({
-        orientation: 'p',
-        unit: 'px',
-        format: [canvas.width, canvas.height]
+  
+  setTimeout(() => {
+    html2canvas(input, { useCORS: true, scale: 2, allowTaint: true })
+      .then((canvas) => {
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF({
+          orientation: 'p',
+          unit: 'px',
+          format: [canvas.width, canvas.height]
+        });
+        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+        pdf.save("mein-ui-design.pdf");
+        
+        setExporting(false); 
+      })
+      .catch(err => {
+        console.error("Fehler bei html2canvas:", err);
+        setExporting(false);
       });
-      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-      pdf.save("mein-ui-design.pdf");
-      
-      // WICHTIG: Den Export-Modus beenden
-      setExporting(false); 
-    })
-    .catch(err => {
-      console.error("Fehler bei html2canvas:", err);
-      setExporting(false); // Auch bei Fehler beenden
-    });
+  }, 0);
 };
 
 
-// 4. Die Haupt-App-Komponente
+// 4. Haupt-App-Komponente
 function App() {
   const [components, setComponents] = useState([]);
   const [selectedComponentId, setSelectedComponentId] = useState(null);
-  
-  // NEUER STATE: Steuert den Export-Modus
   const [isExporting, setIsExporting] = useState(false); 
-  
   const canvasRef = useRef(null);
 
-  // addComponent (unverändert)
+  // addComponent (MIT createRef)
   const addComponent = (type) => {
     const newComponent = {
       id: `comp-${Date.now()}`,
@@ -101,7 +116,9 @@ function App() {
       content: type === 'image' ? 'Bild-Platzhalter' : `Neues ${type}-Element`,
       x: 10,
       y: 10,
-      ref: createRef(null) 
+      width: type === 'image' ? 150 : 180,
+      height: type === 'image' ? 100 : 40,
+      ref: createRef(null) // WICHTIG: Die Ref für Draggable
     };
     setComponents(prevComponents => [...prevComponents, newComponent]);
   };
@@ -115,15 +132,24 @@ function App() {
     );
   };
 
+  // onResize (unverändert)
+  const onResize = (event, { size }, id) => {
+    setComponents(prevComponents =>
+      prevComponents.map(comp =>
+        comp.id === id ? { ...comp, width: size.width, height: size.height } : comp
+      )
+    );
+  };
+
   // renderComponent (unverändert)
   const renderComponent = (comp) => {
     switch (comp.type) {
       case 'text':
-        return <span>{comp.content}</span>;
+        return <span className="content-fill">{comp.content}</span>;
       case 'button':
-        return <button>{comp.content}</button>;
+        return <button className="content-fill">{comp.content}</button>;
       case 'image':
-        return <div className="placeholder-image">{comp.content}</div>;
+        return <div className="placeholder-image content-fill">{comp.content}</div>;
       default:
         return null;
     }
@@ -140,14 +166,12 @@ function App() {
   
   const selectedComponent = components.find(comp => comp.id === selectedComponentId);
 
-  // NEUER HOOK: Löst den PDF-Export aus, *nachdem* der State
-  // (und damit das DOM) aktualisiert wurde.
+  // useEffect (für PDF-Export)
   useEffect(() => {
     if (isExporting) {
-      // Wir rufen die PDF-Funktion auf und übergeben ihr die Setter-Funktion
       generatePDF(canvasRef, setIsExporting);
     }
-  }, [isExporting]); // Lauscht nur auf Änderungen an 'isExporting'
+  }, [isExporting]);
 
   // Render-Funktion
   return (
@@ -157,7 +181,6 @@ function App() {
       
       <div className="main-area">
         <div className="toolbar">
-          {/* GEÄNDERT: Der Button setzt jetzt nur noch den State */}
           <button onClick={() => setIsExporting(true)} disabled={isExporting}>
             {isExporting ? 'Exportiere...' : 'Als PDF exportieren'}
           </button>
@@ -175,50 +198,71 @@ function App() {
           
           {/* === KONDITIONALES RENDERING === */}
           
-          {/* 1. Normaler Modus (mit Draggable) */}
+          {/* 1. Normaler Modus (Drag, Resize, Select) */}
           {!isExporting && components.map((comp) => (
+            // KORREKTE STRUKTUR:
+            // Draggable wendet 'transform' auf einen Wrapper-Div an.
+            // Dieser Wrapper-Div erhält die 'nodeRef'.
+            // Dieser Wrapper-Div erhält die Grösse (width/height) aus dem State.
+            // Resizable lebt INNEN und wird auf 100% Grösse des Wrappers gesetzt.
             <Draggable
               key={comp.id}
-              nodeRef={comp.ref} 
+              nodeRef={comp.ref} // nodeRef MUSS auf dem direkten Kind sein
               position={{ x: comp.x, y: comp.y }} 
               onStop={(e, data) => onStopDrag(e, data, comp.id)}
               bounds="parent"
               handle=".drag-handle" 
             >
-              <div 
-                id={comp.id}
-                className={`draggable-component dragging-active ${comp.id === selectedComponentId ? 'selected' : ''}`} 
-                ref={comp.ref}
-                onClick={() => setSelectedComponentId(comp.id)}
+              <div
+                ref={comp.ref} // Hier wird die Ref zugewiesen
+                // WICHTIG: Die Grösse muss auf den Wrapper, den Draggable bewegt
+                style={{ 
+                  width: comp.width, 
+                  height: comp.height,
+                  position: 'absolute' // Notwendig, da es nicht mehr vom Resizable-Wrapper kommt
+                }}
               >
-                {/* WICHTIG: Das 'dragging-active' Tag ist für das alte PDF-Skript 
-                    (das Handles versteckt), aber wir behalten es für den Klick-Handler.
-                    Wir müssen sicherstellen, dass das Handle im Export-Modus nicht gerendert wird. */}
-                <div className="drag-handle">::</div>
-                {renderComponent(comp)}
+                <Resizable
+                  // Resizable füllt jetzt den Wrapper
+                  width={comp.width} // Behalte dies, damit Resizable die Grösse "kennt"
+                  height={comp.height} // Behalte dies, damit Resizable die Grösse "kennt"
+                  onResize={(e, data) => onResize(e, data.size, comp.id)}
+                  resizeHandles={['se']} 
+                >
+                  <div 
+                    id={comp.id}
+                    className={`draggable-component dragging-active ${comp.id === selectedComponentId ? 'selected' : ''}`} 
+                    onClick={() => setSelectedComponentId(comp.id)}
+                    // Füllt den Resizable-Container
+                    style={{ width: '100%', height: '100%' }}
+                  >
+                    <div className="drag-handle">::</div>
+                    {renderComponent(comp)}
+                  </div>
+                </Resizable>
               </div>
             </Draggable>
           ))}
           
-          {/* 2. Export-Modus (reines HTML, kein Draggable, kein Handle) */}
+          {/* 2. Export-Modus (reines, positioniertes HTML) */}
           {isExporting && components.map((comp) => (
             <div
               key={comp.id}
               id={comp.id}
-              className="draggable-component" // 'dragging-active' & 'selected' entfernt
-              // WICHTIG: Positioniere es mit 'top'/'left', was html2canvas versteht
+              className="draggable-component" 
               style={{
                 position: 'absolute',
                 top: `${comp.y}px`,
-                left: `${comp.x}px`
+                left: `${comp.x}px`,
+                width: `${comp.width}px`,
+                height: `${comp.height}px`
               }}
             >
-              {/* Kein Drag-Handle rendern! */}
               {renderComponent(comp)}
             </div>
           ))}
 
-          {/* 3. Platzhalter (unverändert) */}
+          {/* 3. Platzhalter */}
           {components.length === 0 && (
             <div className="canvas-placeholder">
               Klicke auf Elemente in der Toolbox, um sie hinzuzufügen.
