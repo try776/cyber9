@@ -1,3 +1,4 @@
+// createRef und useEffect sind wieder da, sie sind alle notwendig
 import React, { useState, useRef, createRef, useEffect } from 'react';
 import Draggable from 'react-draggable';
 import jsPDF from 'jspdf';
@@ -21,7 +22,7 @@ const Toolbox = ({ addComponent }) => {
   );
 };
 
-// 2. Properties-Panel (unverändert)
+// 2. Properties-Panel (JETZT KORRIGIERT)
 const PropertiesPanel = ({ selectedComponent, updateComponent }) => {
   if (!selectedComponent) {
     return (
@@ -34,11 +35,23 @@ const PropertiesPanel = ({ selectedComponent, updateComponent }) => {
   const handleContentChange = (e) => {
     updateComponent(selectedComponent.id, 'content', e.target.value);
   };
+
+  // KORRIGIERTER HANDLER: Verhindert 0 oder negative Zahlen
   const handleWidthChange = (e) => {
-    updateComponent(selectedComponent.id, 'width', parseInt(e.target.value) || 0);
+    let newWidth = parseInt(e.target.value);
+    if (isNaN(newWidth) || newWidth < 10) {
+      newWidth = 10; // Mindestbreite
+    }
+    updateComponent(selectedComponent.id, 'width', newWidth);
   };
+
+  // KORRIGIERTER HANDLER: Verhindert 0 oder negative Zahlen
   const handleHeightChange = (e) => {
-    updateComponent(selectedComponent.id, 'height', parseInt(e.target.value) || 0);
+    let newHeight = parseInt(e.target.value);
+    if (isNaN(newHeight) || newHeight < 10) {
+      newHeight = 10; // Mindesthöhe
+    }
+    updateComponent(selectedComponent.id, 'height', newHeight);
   };
 
   return (
@@ -59,6 +72,7 @@ const PropertiesPanel = ({ selectedComponent, updateComponent }) => {
           type="number" 
           value={selectedComponent.width} 
           onChange={handleWidthChange}
+          min="10" // Fügt auch eine HTML5-Validierung hinzu
         />
       </div>
       <div className="property-item">
@@ -67,6 +81,7 @@ const PropertiesPanel = ({ selectedComponent, updateComponent }) => {
           type="number" 
           value={selectedComponent.height} 
           onChange={handleHeightChange}
+          min="10" // Fügt auch eine HTML5-Validierung hinzu
         />
       </div>
     </div>
@@ -134,9 +149,13 @@ function App() {
 
   // onResize (unverändert)
   const onResize = (event, { size }, id) => {
+    // Sorge auch hier für eine Mindestgrösse beim direkten Resizen
+    const newWidth = size.width < 10 ? 10 : size.width;
+    const newHeight = size.height < 10 ? 10 : size.height;
+
     setComponents(prevComponents =>
       prevComponents.map(comp =>
-        comp.id === id ? { ...comp, width: size.width, height: size.height } : comp
+        comp.id === id ? { ...comp, width: newWidth, height: newHeight } : comp
       )
     );
   };
@@ -200,40 +219,34 @@ function App() {
           
           {/* 1. Normaler Modus (Drag, Resize, Select) */}
           {!isExporting && components.map((comp) => (
-            // KORREKTE STRUKTUR:
-            // Draggable wendet 'transform' auf einen Wrapper-Div an.
-            // Dieser Wrapper-Div erhält die 'nodeRef'.
-            // Dieser Wrapper-Div erhält die Grösse (width/height) aus dem State.
-            // Resizable lebt INNEN und wird auf 100% Grösse des Wrappers gesetzt.
             <Draggable
               key={comp.id}
-              nodeRef={comp.ref} // nodeRef MUSS auf dem direkten Kind sein
+              nodeRef={comp.ref} 
               position={{ x: comp.x, y: comp.y }} 
               onStop={(e, data) => onStopDrag(e, data, comp.id)}
               bounds="parent"
               handle=".drag-handle" 
             >
               <div
-                ref={comp.ref} // Hier wird die Ref zugewiesen
-                // WICHTIG: Die Grösse muss auf den Wrapper, den Draggable bewegt
+                ref={comp.ref} 
                 style={{ 
                   width: comp.width, 
                   height: comp.height,
-                  position: 'absolute' // Notwendig, da es nicht mehr vom Resizable-Wrapper kommt
+                  position: 'absolute' 
                 }}
               >
                 <Resizable
-                  // Resizable füllt jetzt den Wrapper
-                  width={comp.width} // Behalte dies, damit Resizable die Grösse "kennt"
-                  height={comp.height} // Behalte dies, damit Resizable die Grösse "kennt"
+                  width={comp.width} 
+                  height={comp.height} 
                   onResize={(e, data) => onResize(e, data.size, comp.id)}
                   resizeHandles={['se']} 
+                  // Füge Mindestmasse hinzu, um Absturz zu verhindern
+                  minConstraints={[10, 10]} 
                 >
                   <div 
                     id={comp.id}
                     className={`draggable-component dragging-active ${comp.id === selectedComponentId ? 'selected' : ''}`} 
                     onClick={() => setSelectedComponentId(comp.id)}
-                    // Füllt den Resizable-Container
                     style={{ width: '100%', height: '100%' }}
                   >
                     <div className="drag-handle">::</div>
