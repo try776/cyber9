@@ -22,7 +22,7 @@ const Toolbox = ({ addComponent }) => {
   );
 };
 
-// 2. Properties-Panel (JETZT KORRIGIERT)
+// 2. Properties-Panel (unverändert)
 const PropertiesPanel = ({ selectedComponent, updateComponent }) => {
   if (!selectedComponent) {
     return (
@@ -36,7 +36,6 @@ const PropertiesPanel = ({ selectedComponent, updateComponent }) => {
     updateComponent(selectedComponent.id, 'content', e.target.value);
   };
 
-  // KORRIGIERTER HANDLER: Verhindert 0 oder negative Zahlen
   const handleWidthChange = (e) => {
     let newWidth = parseInt(e.target.value);
     if (isNaN(newWidth) || newWidth < 10) {
@@ -45,7 +44,6 @@ const PropertiesPanel = ({ selectedComponent, updateComponent }) => {
     updateComponent(selectedComponent.id, 'width', newWidth);
   };
 
-  // KORRIGIERTER HANDLER: Verhindert 0 oder negative Zahlen
   const handleHeightChange = (e) => {
     let newHeight = parseInt(e.target.value);
     if (isNaN(newHeight) || newHeight < 10) {
@@ -72,7 +70,7 @@ const PropertiesPanel = ({ selectedComponent, updateComponent }) => {
           type="number" 
           value={selectedComponent.width} 
           onChange={handleWidthChange}
-          min="10" // Fügt auch eine HTML5-Validierung hinzu
+          min="10" 
         />
       </div>
       <div className="property-item">
@@ -81,7 +79,7 @@ const PropertiesPanel = ({ selectedComponent, updateComponent }) => {
           type="number" 
           value={selectedComponent.height} 
           onChange={handleHeightChange}
-          min="10" // Fügt auch eine HTML5-Validierung hinzu
+          min="10" 
         />
       </div>
     </div>
@@ -89,7 +87,7 @@ const PropertiesPanel = ({ selectedComponent, updateComponent }) => {
 };
 
 
-// 3. PDF Export-Funktion (Die funktionierende Version)
+// 3. PDF Export-Funktion (unverändert)
 const generatePDF = (canvasRef, setExporting) => {
   console.log("PDF-Generierung startet...");
   const input = canvasRef.current;
@@ -123,7 +121,7 @@ function App() {
   const [isExporting, setIsExporting] = useState(false); 
   const canvasRef = useRef(null);
 
-  // addComponent (MIT createRef)
+  // addComponent (unverändert)
   const addComponent = (type) => {
     const newComponent = {
       id: `comp-${Date.now()}`,
@@ -133,7 +131,7 @@ function App() {
       y: 10,
       width: type === 'image' ? 150 : 180,
       height: type === 'image' ? 100 : 40,
-      ref: createRef(null) // WICHTIG: Die Ref für Draggable
+      ref: createRef(null) 
     };
     setComponents(prevComponents => [...prevComponents, newComponent]);
   };
@@ -147,8 +145,9 @@ function App() {
     );
   };
 
-  // onResize (unverändert)
-  const onResize = (event, { size }, id) => {
+  // onResize (HIER IST DIE KORREKTUR)
+  // Wir entfernen die unnötige Destrukturierung von 'size'
+  const onResize = (event, size, id) => {
     // Sorge auch hier für eine Mindestgrösse beim direkten Resizen
     const newWidth = size.width < 10 ? 10 : size.width;
     const newHeight = size.height < 10 ? 10 : size.height;
@@ -185,7 +184,7 @@ function App() {
   
   const selectedComponent = components.find(comp => comp.id === selectedComponentId);
 
-  // useEffect (für PDF-Export)
+  // useEffect (unverändert)
   useEffect(() => {
     if (isExporting) {
       generatePDF(canvasRef, setIsExporting);
@@ -238,9 +237,9 @@ function App() {
                 <Resizable
                   width={comp.width} 
                   height={comp.height} 
+                  // Der Aufruf hier ist jetzt korrekt
                   onResize={(e, data) => onResize(e, data.size, comp.id)}
                   resizeHandles={['se']} 
-                  // Füge Mindestmasse hinzu, um Absturz zu verhindern
                   minConstraints={[10, 10]} 
                 >
                   <div 
@@ -257,7 +256,7 @@ function App() {
             </Draggable>
           ))}
           
-          {/* 2. Export-Modus (reines, positioniertes HTML) */}
+          {/* 2. Export-Modus (unverändert) */}
           {isExporting && components.map((comp) => (
             <div
               key={comp.id}
@@ -275,7 +274,7 @@ function App() {
             </div>
           ))}
 
-          {/* 3. Platzhalter */}
+          {/* 3. Platzhalter (unverändert) */}
           {components.length === 0 && (
             <div className="canvas-placeholder">
               Klicke auf Elemente in der Toolbox, um sie hinzuzufügen.
