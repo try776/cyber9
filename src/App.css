@@ -470,3 +470,97 @@ input[type="color"] {
   gap: 8px;
   font-size: 0.85rem;
 }
+/* === NEUE PRO FEATURES STYLES === */
+
+/* Zoom Controls */
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  background: var(--bg-canvas);
+  padding: 4px;
+  border-radius: 4px;
+  margin: 0 15px;
+}
+
+/* Canvas Wrapper für Zoom & Format */
+.canvas-wrapper-zoom {
+  box-shadow: 0 0 20px rgba(0,0,0,0.1);
+  background: white;
+  transition: transform 0.2s ease-out;
+}
+
+/* Tab Navigation in Toolbox */
+.tab-switch {
+  display: flex;
+  gap: 5px;
+}
+
+.tab-switch button {
+  padding: 5px 10px;
+  background: transparent;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  color: var(--text-muted);
+}
+
+.tab-switch button.active {
+  border-bottom-color: var(--primary);
+  color: var(--primary);
+}
+
+/* Layers List */
+.layers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.layer-item {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  background: var(--bg-app);
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-radius: 4px;
+}
+
+.layer-item:hover {
+  background: rgba(0,0,0,0.05);
+}
+
+.layer-item.selected {
+  background: rgba(52, 152, 219, 0.1);
+  border-color: var(--primary);
+}
+
+.layer-name {
+  flex: 1;
+  font-size: 0.9rem;
+  margin: 0 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.layer-lock {
+  padding: 2px;
+  font-size: 0.8rem;
+  background: transparent;
+}
+
+.empty-hint {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 20px;
+  font-size: 0.9rem;
+}
+
+/* Slider Row für Opacity */
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  font-size: 0.85rem;
+}
