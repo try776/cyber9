@@ -1,252 +1,472 @@
 /* === GLOBALE STYLES & VARIABLEN === */
 :root {
-  /* Farben */
-  --color-primary: #007bff;
-  --color-primary-dark: #0056b3;
-  --color-secondary: #28a745;
-  --color-background: #ffffff;
-  --color-background-light: #f4f4f4;
-  --color-background-canvas: #fdfdfd;
-  --color-border: #ddd;
-  --color-text: #333;
-  --color-text-light: #888;
-  --color-text-placeholder: #aaa;
-  --color-grid: rgba(0, 0, 0, 0.1);
-
-  /* Grössen & Schrift */
-  --toolbox-width: 200px;
-  --properties-panel-width: 250px;
-  --border-radius-default: 4px;
-  --font-family-default: Arial, sans-serif;
+  /* Light Theme (Standard) */
+  --bg-app: #f8f9fa;
+  --bg-panel: #ffffff;
+  --bg-canvas: #eef2f5;
+  --text-main: #2c3e50;
+  --text-muted: #95a5a6;
+  --border-color: #e2e8f0;
+  --primary: #3498db;
+  --primary-hover: #2980b9;
+  --accent: #e74c3c; /* Löschen/Gefahr */
+  --success: #2ecc71;
+  --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+  --radius: 8px;
+  --header-height: 60px;
+  --panel-width: 260px;
+  --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-/* Globale Best Practices */
-*,
-*::before,
-*::after {
+[data-theme='dark'] {
+  /* Dark Theme */
+  --bg-app: #121212;
+  --bg-panel: #1e1e1e;
+  --bg-canvas: #2c2c2c;
+  --text-main: #ecf0f1;
+  --text-muted: #7f8c8d;
+  --border-color: #333;
+  --primary: #5dade2;
+  --primary-hover: #3498db;
+  --shadow-sm: 0 2px 4px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+*, *::before, *::after {
   box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  font-family: var(--font-family-default);
-  color: var(--color-text);
-  overflow: hidden; /* Verhindert Scrollbalken auf App-Ebene */
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  overflow: hidden;
+  touch-action: none; /* Wichtig für Dragging auf Mobile */
 }
 
-/* === HAUPT-LAYOUT === */
-.App-Builder {
+/* === BUTTONS & INPUTS === */
+button {
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-weight: 600;
+  transition: var(--transition);
   display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+input, select {
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  padding: 8px;
+  border-radius: var(--radius);
+  width: 100%;
+}
+
+input[type="color"] {
+  padding: 0;
+  height: 30px;
+  cursor: pointer;
+}
+
+/* === LAYOUT === */
+.app-container {
+  display: flex;
+  flex-direction: column;
   height: 100vh;
 }
 
-/* === TOOLBOX (links) === */
-.toolbox {
-  width: var(--toolbox-width);
-  background-color: var(--color-background-light);
-  border-right: 1px solid var(--color-border);
-  padding: 15px;
-  flex-shrink: 0;
+/* Header / Toolbar oben */
+.top-bar {
+  height: var(--header-height);
+  background-color: var(--bg-panel);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 15px;
+  z-index: 50;
+  box-shadow: var(--shadow-sm);
 }
 
-.toolbox h3 {
-  margin-top: 0;
+.logo {
+  font-weight: 900;
+  font-size: 1.2rem;
+  color: var(--primary);
+  letter-spacing: -0.5px;
 }
 
-/* === HAUPTBEREICH (mitte) === */
-.main-area {
-  flex-grow: 1; 
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.icon-btn {
+  padding: 8px;
+  background: transparent;
+  color: var(--text-main);
+  font-size: 1.1rem;
+}
+
+.icon-btn:hover {
+  background-color: var(--bg-app);
+  color: var(--primary);
+}
+
+.primary-btn {
+  background-color: var(--primary);
+  color: white;
+  padding: 8px 16px;
+}
+
+.primary-btn:hover {
+  background-color: var(--primary-hover);
+}
+
+/* Workspace */
+.workspace {
+  flex: 1;
+  display: flex;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Panels (Toolbox & Properties) */
+.panel {
+  width: var(--panel-width);
+  background-color: var(--bg-panel);
+  border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  min-width: 0; 
+  z-index: 40;
+  transition: transform 0.3s ease;
 }
 
-.toolbar {
-  background-color: var(--color-background);
-  border-bottom: 1px solid var(--color-border);
-  padding: 10px;
-  text-align: right;
-  flex-shrink: 0;
+.panel-right {
+  border-right: none;
+  border-left: 1px solid var(--border-color);
 }
 
-/* === GEMEINSAME BUTTON-STYLES === */
-.toolbox button,
-.toolbar button {
-  border: none;
-  border-radius: var(--border-radius-default);
-  cursor: pointer;
-  color: var(--color-background);
+.panel-header {
+  padding: 15px;
   font-weight: bold;
-  transition: background-color 0.2s ease;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.toolbox button {
-  display: block;
-  width: 100%;
-  margin-bottom: 10px;
-  padding: 10px;
-  background-color: var(--color-primary);
+.panel-content {
+  padding: 15px;
+  overflow-y: auto;
+  flex: 1;
 }
 
-.toolbox button:hover {
-  background-color: var(--color-primary-dark);
+.tool-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
 }
 
-.toolbar button {
-  padding: 8px 12px;
-  background-color: var(--color-secondary);
+.tool-item {
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  padding: 15px;
+  flex-direction: column;
+  text-align: center;
+  border: 1px solid var(--border-color);
 }
 
-.toolbar button:hover {
-  background-color: #218838; /* Etwas dunkleres Grün */
+.tool-item:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background-color: rgba(52, 152, 219, 0.05);
 }
 
-/* === DIE LEINWAND (Canvas) === */
-.canvas {
-  flex-grow: 1;
-  background-color: var(--color-background-canvas);
+/* Canvas */
+.canvas-area {
+  flex: 1;
+  background-color: var(--bg-canvas);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Grid Background Pattern */
+.canvas-area.grid-on {
   background-image: 
-    linear-gradient(var(--color-grid) 1px, transparent 1px),
-    linear-gradient(90deg, var(--color-grid) 1px, transparent 1px);
+    linear-gradient(var(--border-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border-color) 1px, transparent 1px);
   background-size: 20px 20px;
-  position: relative; 
-  overflow: auto; 
 }
 
-.canvas-placeholder {
+.canvas-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: auto; /* Scrollen wenn Inhalt größer als Screen */
+}
+
+/* Empty State */
+.empty-state {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  color: var(--color-text-placeholder);
-  font-size: 1.2rem;
-  user-select: none;
+  text-align: center;
+  color: var(--text-muted);
+  pointer-events: none;
 }
 
-/* === VERSCHIEBBARE ELEMENTE (Wrapper & Inhalt) === */
-
-/* NEU: Das <Resizable>-Element selbst. Es muss 100% seines Wrappers füllen. */
-.react-resizable {
-  width: 100%;
-  height: 100%;
-  position: relative; /* WICHTIG */
-}
-
-/* Dies ist unser Kind-Element, das 'draggable-component' */
+/* Draggable Component Styles */
 .draggable-component {
-  /* Füllt den 'react-resizable'-Wrapper aus */
   width: 100%;
   height: 100%;
-  
   position: relative;
   display: flex;
   align-items: center;
-  
-  border: 2px dashed transparent;
-  padding: 5px;
-  z-index: 1;
-  box-sizing: border-box; 
+  justify-content: center;
+  box-sizing: border-box;
+  cursor: pointer;
+  overflow: hidden; /* Damit Inhalte nicht überlappen */
 }
 
-.draggable-component:hover {
-  border-color: var(--color-primary);
-  z-index: 2;
+/* Edit Mode Styles */
+.edit-mode .draggable-component {
+  border: 1px dashed transparent;
 }
 
-.draggable-component.selected {
-  border-color: var(--color-primary);
-  border-style: solid;
-  z-index: 3;
+.edit-mode .draggable-component:hover {
+  border-color: var(--primary);
+}
+
+.edit-mode .draggable-component.selected {
+  border: 2px solid var(--primary);
+  box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.1);
+  z-index: 100 !important; /* Selected always top temporary */
 }
 
 .drag-handle {
-  cursor: move;
-  padding: 5px;
-  color: var(--color-primary);
-  user-select: none;
   position: absolute;
-  top: 0;
+  top: -25px;
   left: 0;
-  z-index: 10;
+  background: var(--primary);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px 4px 0 0;
+  font-size: 0.7rem;
+  cursor: move;
+  display: none;
+  z-index: 20;
 }
 
-.react-resizable-handle-se {
-  z-index: 11 !important; 
+.selected .drag-handle {
+  display: block;
 }
 
-/* === INHALT DER ELEMENTE === */
-.content-fill {
+/* Component Content Styles */
+.comp-content {
   width: 100%;
   height: 100%;
-  box-sizing: border-box;
-  padding-left: 25px; 
-}
-
-.draggable-component span.content-fill {
-  padding: 10px;
-  padding-left: 25px;
-  background-color: rgba(255, 255, 255, 0.8);
-  display: flex;
-  align-items: center;
-}
-
-.draggable-component button.content-fill {
-  padding: 10px 15px;
-  padding-left: 25px;
-  width: 100%;
-  height: 100%;
-}
-
-.placeholder-image.content-fill {
-  background-color: #eee;
-  border: 1px solid #ccc;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-text-light);
-  font-size: 0.9rem;
+  text-align: center;
+  user-select: none;
 }
 
-/* === PROPERTIES PANEL (rechts) === */
-.properties-panel {
-  width: var(--properties-panel-width);
-  background-color: var(--color-background-light);
-  border-left: 1px solid var(--color-border);
-  padding: 15px;
-  flex-shrink: 0;
-  overflow-y: auto;
+/* React Resizable Handles überschreiben */
+.react-resizable-handle {
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.selected .react-resizable-handle {
+  opacity: 1;
+}
+.react-resizable-handle-se {
+  width: 15px;
+  height: 15px;
+  bottom: 5px;
+  right: 5px;
+  background-color: var(--primary);
+  border-radius: 50%;
+  z-index: 20;
 }
 
-.properties-panel h3 {
-  margin-top: 0;
+/* === PROPERTIES FORM === */
+.prop-group {
+  margin-bottom: 20px;
 }
-
-.panel-placeholder {
-  color: var(--color-text-light);
-  font-style: italic;
-  font-size: 0.9rem;
-}
-
-.property-item {
-  margin-top: 15px;
-}
-
-.property-item label {
+.prop-group label {
   display: block;
-  font-size: 0.8rem;
-  font-weight: bold;
   margin-bottom: 5px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+.prop-row {
+  display: flex;
+  gap: 10px;
 }
 
-.property-item input {
+/* === MOBILE RESPONSIVENESS === */
+@media (max-width: 768px) {
+  :root {
+    --panel-width: 100%;
+    --header-height: 50px;
+  }
+
+  .panel {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    transform: translateX(-100%); /* Standardmäßig versteckt */
+    box-shadow: var(--shadow-md);
+  }
+
+  .panel-right {
+    left: auto;
+    right: 0;
+    transform: translateX(100%);
+  }
+
+  .panel.open {
+    transform: translateX(0);
+  }
+
+  .workspace {
+    position: relative;
+  }
+  
+  .canvas-area {
+    /* Auf Mobile etwas Platz für Touch lassen */
+    touch-action: pan-x pan-y; 
+  }
+  
+  .logo span {
+    display: none; /* Nur Icon auf ganz kleinen Screens */
+  }
+
+  /* Mobile Toggle Buttons unten */
+  .mobile-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: var(--bg-panel);
+    border-top: 1px solid var(--border-color);
+    justify-content: space-around;
+    align-items: center;
+    z-index: 100;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .app-container {
+    padding-bottom: 60px; /* Platz für Mobile Nav */
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-nav {
+    display: none;
+  }
+  .panel {
+    transform: none !important; /* Immer sichtbar auf Desktop */
+    position: static;
+  }
+  .mobile-only {
+    display: none;
+  }
+}
+/* === NEUE STYLES FÜR DIE UPDATES === */
+
+/* Entferne das alte .draggable-component Styling teilweise */
+.draggable-wrapper {
+  /* Wrapper für Positionierung */
+  cursor: grab;
+}
+.draggable-wrapper:active {
+  cursor: grabbing;
+}
+.draggable-wrapper.locked {
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+/* Das innere Element mit dem Style */
+.component-inner {
   width: 100%;
-  padding: 8px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--border-radius-default);
-  box-sizing: border-box;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  transition: box-shadow 0.2s;
 }
 
-.property-item input:disabled {
-  background-color: #eee;
-  color: #888;
+/* Selection Border jetzt am Wrapper oder Inner */
+.selected-wrapper .component-inner {
+  outline: 2px solid var(--primary);
+  /* Outline ist besser als Border, da es Layout nicht verschiebt */
+}
+
+.lock-indicator {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  font-size: 12px;
+  background: rgba(0,0,0,0.5);
+  color: white;
+  padding: 2px;
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+/* Property Panel Updates */
+.actions-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+
+.divider {
+  border: 0;
+  border-top: 1px solid var(--border-color);
+  margin: 15px 0;
+}
+
+.small-btn {
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+}
+.small-btn:hover {
+  background: var(--border-color);
+}
+
+.icon-btn.active {
+  background-color: var(--primary);
+  color: white;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
 }
