@@ -1,4 +1,4 @@
-import React, { useState, useRef, createRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Draggable from 'react-draggable';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -9,7 +9,6 @@ import './App.css';
 // --- HILFSFUNKTIONEN ---
 const generateId = () => `el-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-// Komponenten-Vorlagen
 const getInitialComponent = (type) => {
   const base = {
     id: generateId(),
@@ -18,7 +17,7 @@ const getInitialComponent = (type) => {
     y: 50,
     width: 150,
     height: 60,
-    zIndex: 1,
+    zIndex: components => components.length + 1, // Auto-Top Layer
     locked: false,
     content: 'Text',
     styles: {
@@ -32,21 +31,21 @@ const getInitialComponent = (type) => {
       borderWidth: 0,
       borderColor: '#000000',
       textAlign: 'center',
-      objectFit: 'cover' // Für Bilder
+      objectFit: 'cover'
     }
   };
 
   switch (type) {
     case 'button':
-      return { ...base, content: 'Button', width: 120, height: 40, styles: { ...base.styles, backgroundColor: '#3498db', color: '#ffffff', borderRadius: 4, boxShadow: '0 2px 5px rgba(0,0,0,0.2)' } };
+      return { ...base, content: 'Button', width: 120, height: 40, styles: { ...base.styles, backgroundColor: '#3b82f6', color: '#ffffff', borderRadius: 4, boxShadow: '0 2px 5px rgba(0,0,0,0.2)' } };
     case 'box':
-      return { ...base, content: '', width: 100, height: 100, styles: { ...base.styles, backgroundColor: '#ecf0f1', borderWidth: 1, borderColor: '#bdc3c7' } };
+      return { ...base, content: '', width: 100, height: 100, styles: { ...base.styles, backgroundColor: '#e5e7eb', borderWidth: 1, borderColor: '#9ca3af' } };
     case 'circle':
-      return { ...base, content: '', width: 100, height: 100, styles: { ...base.styles, backgroundColor: '#e74c3c', borderRadius: 50 } };
+      return { ...base, content: '', width: 100, height: 100, styles: { ...base.styles, backgroundColor: '#ef4444', borderRadius: 50 } };
     case 'image':
-      return { ...base, content: 'https://via.placeholder.com/150', width: 200, height: 150, styles: { ...base.styles, backgroundColor: '#dfe6e9' } };
+      return { ...base, content: 'https://via.placeholder.com/150', width: 200, height: 150, styles: { ...base.styles, backgroundColor: '#cbd5e1' } };
     case 'input':
-      return { ...base, content: 'Eingabe...', width: 200, height: 40, styles: { ...base.styles, backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#ccc', borderRadius: 4, textAlign: 'left', padding: '5px' } };
+      return { ...base, content: 'Eingabe...', width: 200, height: 40, styles: { ...base.styles, backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#d1d5db', borderRadius: 4, textAlign: 'left', padding: '5px' } };
     default:
       return base;
   }
@@ -59,7 +58,7 @@ const Toolbox = ({ addComponent, isOpen, closePanel, activeTab, setActiveTab, co
     <div className="panel-header">
       <div className="tab-switch">
         <button className={activeTab === 'tools' ? 'active' : ''} onClick={() => setActiveTab('tools')}>Werkzeuge</button>
-        <button className={activeTab === 'layers' ? 'active' : ''} onClick={() => setActiveTab('layers')}>Ebenen</button>
+        <button className={activeTab === 'layers' ? 'active' : ''} onClick={() => setActiveTab('layers')}>Ebenen ({components.length})</button>
       </div>
       <button className="mobile-only icon-btn" onClick={closePanel}>✕</button>
     </div>
@@ -76,7 +75,7 @@ const Toolbox = ({ addComponent, isOpen, closePanel, activeTab, setActiveTab, co
         </div>
       ) : (
         <div className="layers-list">
-          {components.length === 0 && <p className="empty-hint">Keine Ebenen</p>}
+          {components.length === 0 && <p className="empty-hint">Keine Ebenen vorhanden</p>}
           {[...components].reverse().map(comp => (
             <div 
               key={comp.id} 
@@ -84,11 +83,11 @@ const Toolbox = ({ addComponent, isOpen, closePanel, activeTab, setActiveTab, co
               onClick={() => selectComponent(comp.id)}
             >
               <span className="layer-icon">
-                {comp.type === 'image' ? '🖼️' : comp.type === 'text' ? '📝' : 'Element'}
+                {comp.type === 'image' ? '🖼️' : comp.type === 'circle' ? 'O' : comp.type === 'box' ? 'YB' : 'T'}
               </span>
-              <span className="layer-name">{comp.type} - {comp.content.substring(0, 10)}</span>
+              <span className="layer-name">{comp.content.substring(0, 15) || comp.type}</span>
               <button 
-                className="layer-lock" 
+                className={`layer-lock ${comp.locked ? 'locked' : ''}`}
                 onClick={(e) => { e.stopPropagation(); toggleLock(comp.id); }}
               >
                 {comp.locked ? '🔒' : '🔓'}
@@ -117,23 +116,35 @@ const PropertiesPanel = ({ element, updateElement, isOpen, closePanel, actions, 
     return (
       <div className={`panel panel-right ${isOpen ? 'open' : ''}`}>
         <div className="panel-header">
-          <span>Canvas Einstellungen</span>
+          <span>Leinwand</span>
           <button className="mobile-only icon-btn" onClick={closePanel}>✕</button>
         </div>
         <div className="panel-content">
            <div className="prop-group">
-             <label>Papierformat (PDF Export)</label>
+             <label>Papierformat (PDF)</label>
              <select 
                value={canvasSettings.format} 
                onChange={(e) => updateCanvasSettings('format', e.target.value)}
              >
-               <option value="a4">A4 (Standard)</option>
+               <option value="a4">A4</option>
                <option value="letter">US Letter</option>
-               <option value="custom">Benutzerdefiniert (Screen)</option>
+               <option value="custom">Benutzerdefiniert</option>
              </select>
            </div>
-           <div className="empty-msg" style={{marginTop: 20}}>
-             <p>Klicke auf ein Element, um es zu bearbeiten.</p>
+           <div className="prop-group">
+              <label>Hintergrundfarbe</label>
+              <div className="prop-row">
+                <input 
+                  type="color" 
+                  value={canvasSettings.backgroundColor} 
+                  onChange={(e) => updateCanvasSettings('backgroundColor', e.target.value)}
+                />
+                <button className="small-btn" onClick={() => updateCanvasSettings('backgroundColor', '#ffffff')}>Weiß</button>
+                <button className="small-btn" onClick={() => updateCanvasSettings('backgroundColor', 'transparent')}>Transp.</button>
+              </div>
+           </div>
+           <div className="empty-msg" style={{marginTop: 40}}>
+             <p>Klicke auf ein Element zum Bearbeiten.</p>
            </div>
         </div>
       </div>
@@ -150,39 +161,35 @@ const PropertiesPanel = ({ element, updateElement, isOpen, closePanel, actions, 
         
         {/* Quick Actions */}
         <div className="prop-group actions-row">
-          <button className="icon-btn" onClick={actions.bringToFront} title="Ganz nach vorne">⬆️</button>
-          <button className="icon-btn" onClick={actions.sendToBack} title="Ganz nach hinten">⬇️</button>
+          <button className="icon-btn" onClick={actions.bringToFront} title="Nach vorne">⬆️</button>
+          <button className="icon-btn" onClick={actions.sendToBack} title="Nach hinten">⬇️</button>
           <button className="icon-btn" onClick={actions.duplicate} title="Duplizieren">📄</button>
-          <button className={`icon-btn ${element.locked ? 'active' : ''}`} onClick={actions.toggleLock} title={element.locked ? "Entsperren" : "Sperren"}>
+          <button className={`icon-btn ${element.locked ? 'active' : ''}`} onClick={actions.toggleLock} title="Sperren">
             {element.locked ? '🔒' : '🔓'}
           </button>
           <button className="icon-btn delete-btn" onClick={actions.delete} title="Löschen">🗑️</button>
         </div>
 
-        {/* Image Upload Special */}
+        {/* Image Upload */}
         {element.type === 'image' && (
           <div className="prop-group">
             <label>Bildquelle</label>
-            <button className="small-btn full-width" onClick={() => fileInputRef.current.click()}>
-              📁 Bild hochladen
+            <button className="primary-btn full-width" onClick={() => fileInputRef.current.click()}>
+              📁 Bild wählen
             </button>
             <input 
-              type="file" 
-              ref={fileInputRef} 
-              style={{display: 'none'}} 
-              accept="image/*" 
-              onChange={handleFileChange}
+              type="file" ref={fileInputRef} style={{display: 'none'}} 
+              accept="image/*" onChange={handleFileChange}
             />
           </div>
         )}
 
         {/* Inhalt Text */}
-        {element.type !== 'box' && element.type !== 'circle' && element.type !== 'image' && (
+        {['text', 'button', 'input'].includes(element.type) && (
           <div className="prop-group">
-            <label>Inhalt</label>
+            <label>Textinhalt</label>
             <input 
-              type="text" 
-              disabled={element.locked}
+              type="text" disabled={element.locked}
               value={element.content} 
               onChange={(e) => updateElement(element.id, 'content', e.target.value)} 
             />
@@ -191,34 +198,38 @@ const PropertiesPanel = ({ element, updateElement, isOpen, closePanel, actions, 
 
         {/* Styles */}
         <div className="prop-group">
-          <label>Design</label>
+          <label>Farben</label>
           <div className="prop-row">
-             <input type="color" disabled={element.locked} value={element.styles.backgroundColor === 'transparent' ? '#ffffff' : element.styles.backgroundColor} onChange={(e) => updateElement(element.id, 'styles', { ...element.styles, backgroundColor: e.target.value })} />
-             <input type="color" disabled={element.locked} value={element.styles.color} onChange={(e) => updateElement(element.id, 'styles', { ...element.styles, color: e.target.value })} />
-          </div>
-          <div className="slider-row">
-            <span>Deckkraft:</span>
-            <input 
-              type="range" min="0" max="1" step="0.1"
-              disabled={element.locked}
-              value={element.styles.opacity} 
-              onChange={(e) => updateElement(element.id, 'styles', { ...element.styles, opacity: parseFloat(e.target.value) })} 
-            />
+             <div className="color-field">
+               <span>Hintergrund</span>
+               <input type="color" disabled={element.locked} value={element.styles.backgroundColor === 'transparent' ? '#ffffff' : element.styles.backgroundColor} onChange={(e) => updateElement(element.id, 'styles', { ...element.styles, backgroundColor: e.target.value })} />
+             </div>
+             <div className="color-field">
+               <span>Text/Rand</span>
+               <input type="color" disabled={element.locked} value={element.styles.color} onChange={(e) => updateElement(element.id, 'styles', { ...element.styles, color: e.target.value })} />
+             </div>
           </div>
         </div>
 
         <div className="prop-group">
-          <label>Position & Größe</label>
-          <div className="prop-row">
+           <label>Deckkraft: {Math.round(element.styles.opacity * 100)}%</label>
+           <input 
+             type="range" min="0" max="1" step="0.1"
+             disabled={element.locked}
+             value={element.styles.opacity} 
+             onChange={(e) => updateElement(element.id, 'styles', { ...element.styles, opacity: parseFloat(e.target.value) })} 
+           />
+        </div>
+
+        <div className="prop-group">
+          <label>Geometrie</label>
+          <div className="grid-2">
              <input type="number" disabled={element.locked} placeholder="X" value={element.x} onChange={(e) => updateElement(element.id, 'x', parseInt(e.target.value))} />
              <input type="number" disabled={element.locked} placeholder="Y" value={element.y} onChange={(e) => updateElement(element.id, 'y', parseInt(e.target.value))} />
-          </div>
-          <div className="prop-row">
              <input type="number" disabled={element.locked} placeholder="B" value={element.width} onChange={(e) => updateElement(element.id, 'width', parseInt(e.target.value))} />
              <input type="number" disabled={element.locked} placeholder="H" value={element.height} onChange={(e) => updateElement(element.id, 'height', parseInt(e.target.value))} />
           </div>
         </div>
-
       </div>
     </div>
   );
@@ -231,23 +242,30 @@ function App() {
   // Data State
   const [components, setComponents] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
-  const [canvasSettings, setCanvasSettings] = useState({ format: 'a4', width: 800, height: 600 });
+  const [canvasSettings, setCanvasSettings] = useState({ 
+    format: 'a4', 
+    width: 800, 
+    height: 600,
+    backgroundColor: '#ffffff' 
+  });
   
   // History
   const [history, setHistory] = useState([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   
   // UI State
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(true); // Default Dark Mode für "Cyber" Look
   const [gridOn, setGridOn] = useState(true);
-  const [zoom, setZoom] = useState(1); // NEU: Zoom
+  const [zoom, setZoom] = useState(1);
   const [previewMode, setPreviewMode] = useState(false);
-  const [activePanel, setActivePanel] = useState('toolbox'); // 'toolbox', 'props', null
-  const [activeTab, setActiveTab] = useState('tools'); // 'tools' or 'layers'
+  const [activePanel, setActivePanel] = useState('toolbox'); 
+  const [activeTab, setActiveTab] = useState('tools');
 
+  // REFS FIX: Stabile Referenzen für Draggable
+  const nodeRefs = useRef({});
   const canvasRef = useRef(null);
 
-  // --- HISTORY ---
+  // --- HISTORY MANAGEMENT ---
   const addToHistory = useCallback((newState) => {
     const newHistory = history.slice(0, historyIndex + 1);
     newHistory.push(JSON.stringify(newState));
@@ -278,11 +296,65 @@ function App() {
     }
   };
 
+  // --- REFS HELPER (FIX FÜR STICKY ELEMENTS) ---
+  const getNodeRef = (id) => {
+    if (!nodeRefs.current[id]) {
+      nodeRefs.current[id] = React.createRef();
+    }
+    return nodeRefs.current[id];
+  };
+
+  // Cleanup alter Refs
+  useEffect(() => {
+    const currentIds = components.map(c => c.id);
+    Object.keys(nodeRefs.current).forEach(id => {
+      if (!currentIds.includes(id)) delete nodeRefs.current[id];
+    });
+  }, [components]);
+
+  // --- KEYBOARD SHORTCUTS ---
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.target.tagName === 'INPUT') return; // Nicht feuern wenn man tippt
+
+      // Delete
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (selectedId) deleteElement();
+      }
+      // Arrows
+      if (selectedId && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        e.preventDefault();
+        const step = e.shiftKey ? 10 : 1;
+        setComponents(prev => prev.map(c => {
+          if (c.id === selectedId && !c.locked) {
+             const update = { ...c };
+             if (e.key === 'ArrowUp') update.y -= step;
+             if (e.key === 'ArrowDown') update.y += step;
+             if (e.key === 'ArrowLeft') update.x -= step;
+             if (e.key === 'ArrowRight') update.x += step;
+             return update;
+          }
+          return c;
+        }));
+      }
+      // Undo/Redo
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undo(); }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'y') { e.preventDefault(); redo(); }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedId, historyIndex, history]);
+
   // --- ACTIONS ---
   const addComponent = (type) => {
-    const newComp = { ...getInitialComponent(type), ref: createRef() };
+    const newComp = getInitialComponent(type);
+    // Setze zIndex höher als alle anderen
+    const maxZ = components.length > 0 ? Math.max(...components.map(c => c.zIndex)) : 0;
+    newComp.zIndex = maxZ + 1;
+    
     updateComponents([...components, newComp]);
     if (window.innerWidth < 768) setActivePanel(null); 
+    setSelectedId(newComp.id);
   };
 
   const updateElement = (id, key, value) => {
@@ -297,8 +369,6 @@ function App() {
   };
 
   const handleDragStop = (id, data) => {
-    const comp = components.find(c => c.id === id);
-    if (comp && comp.locked) return;
     const updated = components.map(c => c.id === id ? { ...c, x: data.x, y: data.y } : c);
     updateComponents(updated);
   };
@@ -327,8 +397,8 @@ function App() {
       ...original, 
       id: generateId(), 
       x: original.x + 20, 
-      y: original.y + 20, 
-      ref: createRef() 
+      y: original.y + 20,
+      zIndex: original.zIndex + 1
     };
     updateComponents([...components, copy]);
     setSelectedId(copy.id);
@@ -336,7 +406,7 @@ function App() {
 
   const moveLayer = (dir) => {
     if (!selectedId) return;
-    const updated = components.map(c => c.id === selectedId ? { ...c, zIndex: c.zIndex + dir } : c);
+    const updated = components.map(c => c.id === selectedId ? { ...c, zIndex: Math.max(0, c.zIndex + dir) } : c);
     updateComponents(updated);
   };
 
@@ -353,34 +423,32 @@ function App() {
     }
   };
 
-  // --- ZOOM LOGIC ---
   const handleZoom = (delta) => {
-    setZoom(prev => Math.min(Math.max(prev + delta, 0.5), 2));
+    setZoom(prev => Math.min(Math.max(prev + delta, 0.5), 3));
   };
 
   // Export
   const saveLayout = () => { localStorage.setItem('cyber9_layout', JSON.stringify(components)); alert('Gespeichert!'); };
   const loadLayout = () => { 
     const data = localStorage.getItem('cyber9_layout');
-    if (data) {
-       const parsed = JSON.parse(data).map(c => ({...c, ref: createRef()}));
-       updateComponents(parsed);
-    }
+    if (data) updateComponents(JSON.parse(data));
   };
   
   const exportPDF = () => {
-    setPreviewMode(true); setSelectedId(null); setZoom(1); // Reset Zoom for PDF
+    setPreviewMode(true); setSelectedId(null); setZoom(1);
     setTimeout(() => {
-      html2canvas(canvasRef.current, { scale: 2, useCORS: true, backgroundColor: darkMode ? '#2c2c2c' : '#eef2f5' })
+      html2canvas(canvasRef.current, { 
+        scale: 2, 
+        useCORS: true, 
+        backgroundColor: canvasSettings.backgroundColor 
+      })
         .then(canvas => {
           const pdf = new jsPDF({ 
             orientation: canvas.width > canvas.height ? 'l' : 'p', 
             unit: 'px', 
             format: canvasSettings.format === 'custom' ? [canvas.width, canvas.height] : canvasSettings.format 
           });
-          const pdfWidth = pdf.internal.pageSize.getWidth();
-          const pdfHeight = pdf.internal.pageSize.getHeight();
-          pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pdfWidth, pdfHeight);
+          pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight());
           pdf.save('cyber9-design.pdf');
           setPreviewMode(false);
         });
@@ -388,7 +456,6 @@ function App() {
   };
 
   useEffect(() => { document.body.setAttribute('data-theme', darkMode ? 'dark' : 'light'); }, [darkMode]);
-
   const selectedComponent = components.find(c => c.id === selectedId);
 
   return (
@@ -396,23 +463,22 @@ function App() {
       <div className="top-bar">
         <div className="logo">CYBER<span>9</span></div>
         
-        {/* Zoom Controls */}
         <div className="zoom-controls">
           <button className="icon-btn" onClick={() => handleZoom(-0.1)}>➖</button>
-          <span style={{fontSize: '0.8rem', width: '40px', textAlign:'center'}}>{Math.round(zoom * 100)}%</span>
+          <span className="zoom-val">{Math.round(zoom * 100)}%</span>
           <button className="icon-btn" onClick={() => handleZoom(0.1)}>➕</button>
         </div>
 
         <div className="actions">
-          <button className="icon-btn" onClick={undo} title="Undo">↩️</button>
-          <button className="icon-btn" onClick={redo} title="Redo">↪️</button>
+          <button className="icon-btn" onClick={undo} title="Undo (Ctrl+Z)">↩️</button>
+          <button className="icon-btn" onClick={redo} title="Redo (Ctrl+Y)">↪️</button>
           <div className="sep"></div>
           <button className={`icon-btn ${gridOn ? 'active' : ''}`} onClick={() => setGridOn(!gridOn)}>{gridOn ? '📅' : '⬜'}</button>
           <button className="icon-btn" onClick={() => setDarkMode(!darkMode)}>{darkMode ? '☀️' : '🌙'}</button>
           <button className="icon-btn" onClick={saveLayout}>💾</button>
           <button className="icon-btn" onClick={loadLayout}>📂</button>
           <button className="icon-btn danger" onClick={clearCanvas}>♻️</button>
-          <button className="primary-btn" onClick={exportPDF}>PDF</button>
+          <button className="primary-btn" onClick={exportPDF}>Export PDF</button>
         </div>
       </div>
 
@@ -438,23 +504,22 @@ function App() {
               transformOrigin: 'center top',
               width: canvasSettings.format === 'a4' ? '595px' : canvasSettings.format === 'letter' ? '612px' : '100%',
               height: canvasSettings.format === 'a4' ? '842px' : canvasSettings.format === 'letter' ? '792px' : '100%',
+              backgroundColor: canvasSettings.backgroundColor
             }}
           >
             <div 
               className="canvas-container" 
               ref={canvasRef} 
               onClick={(e) => { if(e.target === e.currentTarget) setSelectedId(null); }}
-              style={{ width: '100%', height: '100%' }}
             >
-              {components.length === 0 && <div className="empty-state"><h3>Leere Leinwand</h3></div>}
+              {components.length === 0 && <div className="empty-state"><h3>Leere Leinwand</h3><p>Elemente aus der Toolbox hinzufügen</p></div>}
 
               {components.map((comp) => (
                 <Draggable
                   key={comp.id}
-                  nodeRef={comp.ref}
+                  nodeRef={getNodeRef(comp.id)} // WICHTIG: Hier der Fix!
                   position={{ x: comp.x, y: comp.y }}
-                  // HIER IST DER FIX: GRID SNAPPING + SCALE
-                  grid={gridOn ? [20, 20] : [1, 1]}
+                  grid={gridOn ? [10, 10] : [1, 1]} // Performanteres Snapping
                   scale={zoom}
                   onStop={(e, d) => handleDragStop(comp.id, d)}
                   onStart={() => !comp.locked && setSelectedId(comp.id)}
@@ -463,7 +528,7 @@ function App() {
                   cancel=".react-resizable-handle" 
                 >
                   <div 
-                    ref={comp.ref}
+                    ref={getNodeRef(comp.id)}
                     className={`draggable-wrapper ${comp.locked ? 'locked' : ''} ${selectedId === comp.id ? 'selected-wrapper' : ''}`}
                     style={{ position: 'absolute', width: comp.width, height: comp.height, zIndex: comp.zIndex }}
                     onClick={(e) => { e.stopPropagation(); setSelectedId(comp.id); setActivePanel('props'); }}
@@ -472,7 +537,7 @@ function App() {
                       width={comp.width} height={comp.height}
                       onResize={(e, data) => !comp.locked && handleResize(comp.id, data.size)}
                       onResizeStop={(e, data) => !comp.locked && handleResizeStop(comp.id, data.size)}
-                      resizeHandles={['se']}
+                      resizeHandles={selectedId === comp.id && !comp.locked ? ['se'] : []}
                       minConstraints={[20, 20]}
                     >
                       <div 
@@ -481,15 +546,15 @@ function App() {
                           ...comp.styles,
                           borderRadius: comp.type === 'circle' ? '50%' : `${comp.styles.borderRadius}px`,
                           backgroundImage: comp.type === 'image' ? `url(${comp.content})` : 'none',
-                          backgroundSize: 'cover',
+                          backgroundSize: comp.styles.objectFit || 'cover',
                           backgroundPosition: 'center'
                         }}
                       >
                         {comp.locked && selectedId === comp.id && <div className="lock-indicator">🔒</div>}
                         
                         <div className="comp-content">
-                           {comp.type === 'input' ? <input disabled style={{pointerEvents:'none', width:'100%'}} placeholder={comp.content}/> 
-                           : comp.type === 'image' ? null // Bild ist Hintergrund
+                           {comp.type === 'input' ? <input disabled className="mock-input" placeholder={comp.content}/> 
+                           : comp.type === 'image' ? null 
                            : comp.content}
                         </div>
                       </div>
@@ -520,7 +585,7 @@ function App() {
 
       {/* Mobile Footer */}
       <div className="mobile-nav">
-         <button onClick={() => setActivePanel(activePanel === 'toolbox' ? null : 'toolbox')}>🛠️/📑</button>
+         <button onClick={() => setActivePanel(activePanel === 'toolbox' ? null : 'toolbox')}>🛠️</button>
          <button onClick={undo}>↩️</button>
          <button onClick={() => setActivePanel(activePanel === 'props' ? null : 'props')}>🎨</button>
       </div>
